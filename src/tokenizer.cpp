@@ -24,7 +24,6 @@ TODO:
                           }else{ \
                             EMIT_CHAR_TOKENS(m_tmp_buffer); \
                           } 
-#define ASSERT_NOT_REACHED assert(false) // for unimplemented states
 
 Tokenizer::Tokenizer(const std::string& contents) : 
   m_contents{contents}, m_cursor{0}, 
