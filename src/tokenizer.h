@@ -16,7 +16,7 @@ class Tokenizer {
   bool advance();
   std::optional<size_t> simd_next_pos();
   bool in_simd_state();
-  void set_return_state(TokenizerState state);
+  void set_return_state(TokenizerState);
   bool is_appropriate_end_tag_token();
   bool is_attribute_return_state();
 

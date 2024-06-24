@@ -10,8 +10,7 @@ TODO:
 
 #define REPLACEMENT_STR "\xEF\xBF\xBD"
 
-#define EMIT_CHAR_TOKENS(str) auto tokens = construct_character_tokens(str); \
-                           for(auto& token : tokens){ m_tokens.push_back(std::move(token)); }
+#define EMIT_CHAR_TOKENS(str) for(auto& token : construct_character_tokens(str)){ m_tokens.push_back(std::move(token)); }
 #define CHAR_TOKEN(x) construct_character_token(x)
 #define EMIT_CHAR_TOKEN(x) m_tokens.push_back(CHAR_TOKEN(x))
 #define COMMENT_TOKEN(x) construct_comment_token(x)
@@ -41,24 +40,21 @@ Tokenizer::Tokenizer(const std::string& contents) :
 void Tokenizer::run() {
   while(true){
   
-    if(in_simd_state()){
-      std::optional<size_t> opt_state_change_char_pos = simd_next_pos();
-      if(!opt_state_change_char_pos.has_value()){
-        // add chunk to m_tokens
-        // set m_cursor
-        continue;
-      }else{
-        size_t state_change_char_pos = opt_state_change_char_pos.value();
-        // add chunk to m_tokens
-        m_cursor = state_change_char_pos;
-      }
-    }else{
-      advance();
-    }
-
-    if(m_cursor >= m_contents.size()){
-      break;
-    }
+    // if(in_simd_state()){
+    //   std::optional<size_t> opt_state_change_char_pos = simd_next_pos();
+    //   if(!opt_state_change_char_pos.has_value()){
+    //     // add chunk to m_tokens
+    //     // set m_cursor
+    //     continue;
+    //   }else{
+    //     size_t state_change_char_pos = opt_state_change_char_pos.value();
+    //     // add chunk to m_tokens
+    //     m_cursor = state_change_char_pos;
+    //   }
+    // }else{
+    //   advance();
+    // }
+    if(!advance()) break;
 
     char cp = m_contents[m_cursor];
     switch(m_state) {
@@ -732,7 +728,7 @@ void Tokenizer::run() {
         }else if(ON('\0')){
           append_to_doctype_token_name(m_tmp_token, REPLACEMENT_STR);
         }else{
-          append_to_doctype_token_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
+          append_to_doctype_token_name(m_tmp_token, isupper(cp) ? (char) tolower(cp) : cp);
         }
         break;
       case TokenizerState::AfterDoctypeNameState:
@@ -973,24 +969,26 @@ void Tokenizer::run() {
           m_cursor--;
         }
         break;
-      case TokenizerState::NamedCharacterReferenceState:
+      // todo: issues with initialization of char_replacement_str?
+      case TokenizerState::NamedCharacterReferenceState: {
         // TODO: deviates from spec, disallows missing semicolon
         size_t i = 0;
         while(m_contents[m_cursor + i] != ';'){
           m_tmp_buffer.push_back(m_contents[m_cursor + i]);
           i++;
         }
-        std::optional<std::string> replacement_str = m_named_char_ref.find(m_tmp_buffer);
-        if(!replacement_str.has_value()){
+        std::optional<std::string> char_replacement_str = m_named_char_ref.find(m_tmp_buffer);
+        if(!char_replacement_str.has_value()){
           FLUSH_CODE_POINTS;
           m_state = TokenizerState::AmbiguousAmpersandState;
         }else{
-          m_tmp_buffer = replacement_str.value();
+          m_tmp_buffer = char_replacement_str.value();
           FLUSH_CODE_POINTS;
           m_tmp_buffer = "";
           m_state = m_return_state;
         }
         break;
+      }
       case TokenizerState::AmbiguousAmpersandState:
         if(isalpha(cp) || isnumber(cp)){
           if(is_attribute_return_state()){
@@ -1016,6 +1014,11 @@ void Tokenizer::run() {
     }
 
   }
+}
+
+bool Tokenizer::advance(){
+  m_cursor++; 
+  return m_cursor < m_contents.size();
 }
 
 /*
