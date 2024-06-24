@@ -31,8 +31,9 @@ void BasicDomParser::consume_token(const Token& token){
         if(!m_seen_html_tag) [[unlikely]] {
           m_seen_html_tag = true;
           init_tag_node(*m_current_node, construct_start_tag_token("html"));
+        }else{
+          push_data_str_to_current_node();
         }
-        push_data_str_to_current_node();
 
         auto tag_node = construct_tag_node(token, m_current_node); auto tmp = tag_node.get();
         m_current_node->m_children.push_back(std::move(tag_node));

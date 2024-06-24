@@ -5,7 +5,7 @@
 
 #include "tokenizer.h"
 
-const std::string html_root_prefix = "../tests/html/";
+const std::string html_root_prefix = "../tests/input/";
 const std::string html_suffix = ".html";
 
 int main (int argc, char** argv){
