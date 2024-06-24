@@ -72,3 +72,42 @@ Token construct_end_tag_token(const std::string& tag_name){
   token.m_start_or_end_tag.tag_name = tag_name;
   return token;
 }
+
+template <typename name_t, typename value_t>
+void append_attribute_to_tag_token(Token& token, name_t name, value_t value){
+  token.m_start_or_end_tag.attributes.push_back(construct_attribute(name, value));
+}
+
+template <typename string_like_t>
+void append_to_tag_token_attribute_name(Token& token, string_like_t& data){
+  token.m_start_or_end_tag.attributes.back().name += data;
+}
+
+template <typename string_like_t>
+void append_to_tag_token_attribute_value(Token& token, string_like_t& data){
+  token.m_start_or_end_tag.attributes.back().value += data;
+}
+
+// TODO: this isn't clean?
+template <typename string_like_t>
+void append_to_tag_token_tag_name(Token& token, string_like_t& data){
+  token.m_start_or_end_tag.tag_name += data;
+}
+
+void append_to_tag_token_tag_name(Token& token, char data){
+  token.m_start_or_end_tag.tag_name.push_back(data);
+}
+
+// TODO: this isn't clean?
+template <typename string_like_t>
+void append_to_comment_or_character_data(Token& token, string_like_t& data){
+  token.m_comment_or_character.data += data;
+}
+
+void append_to_comment_or_character_data(Token& token, char data){
+  token.m_comment_or_character.data.push_back(data);
+}
+
+void set_tag_self_closing_flag(Token& token){
+  token.m_start_or_end_tag.self_closing = true;
+}

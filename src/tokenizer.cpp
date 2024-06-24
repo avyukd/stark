@@ -15,6 +15,7 @@ TODO:
 #define END_TAG_TOKEN(x) construct_end_tag_token(x)
 #define REPLACEMENT_CHAR_TOKEN construct_character_token(REPLACEMENT_STR)
 #define ON(ch) (cp == ch)
+#define EMIT_CURRENT_TOKEN m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token)
 
 Tokenizer::Tokenizer(const std::string& contents) : 
   m_contents(contents), m_cursor(0), 
@@ -134,14 +135,12 @@ void Tokenizer::run() {
         }else if(ON('/')){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('>')){
-          m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
         }else if(cp == '\0'){
-          m_tmp_token.m_start_or_end_tag.tag_name += REPLACEMENT_STR;
-        }else if(isalpha(cp) && isupper(cp)){
-          m_tmp_token.m_start_or_end_tag.tag_name.push_back(tolower(cp));
+          append_to_tag_token_tag_name(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_tmp_token.m_start_or_end_tag.tag_name.push_back(cp);
+          append_to_tag_token_tag_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
         }
         break;
       case TokenizerState::RcDataLessThanSignState:
@@ -167,7 +166,6 @@ void Tokenizer::run() {
         }
         break;
       case TokenizerState::RcDataEndTagNameState:
-        // TODO: appropriate end tag token
         if( 
           is_tab_lf_ff_space(cp) &&
           is_appropriate_end_tag_token()
@@ -176,10 +174,10 @@ void Tokenizer::run() {
         }else if(ON('/') && is_appropriate_end_tag_token()){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('>') && is_appropriate_end_tag_token()){
-          m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
         }else if(isalpha(cp)){
-          m_tmp_token.m_start_or_end_tag.tag_name.push_back(isupper(cp) ? tolower(cp) : cp);
+          append_to_tag_token_tag_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
           m_tmp_buffer.push_back(cp);
         }else{
           m_tokens.push_back(CHAR_TOKEN('<'));
@@ -224,7 +222,7 @@ void Tokenizer::run() {
         }else if(ON('>') && is_appropriate_end_tag_token()){
           m_state = TokenizerState::DataState;
         }else if(isalpha(cp)){
-          m_tokens.back().m_start_or_end_tag.tag_name.push_back(isupper(cp) ? tolower(cp) : cp);
+          append_to_tag_token_tag_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
           m_tmp_buffer.push_back(cp);
         }else{
           m_tokens.push_back(CHAR_TOKEN('<'));
@@ -270,10 +268,10 @@ void Tokenizer::run() {
         }else if(ON('/') && is_appropriate_end_tag_token()){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('>') && is_appropriate_end_tag_token()){
-          m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
         }else if(isalpha(cp)){
-          m_tmp_token.m_start_or_end_tag.tag_name.push_back(isupper(cp) ? tolower(cp) : cp);
+          append_to_tag_token_tag_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
           m_tmp_buffer.push_back(cp);
         }else{
           m_tokens.push_back(CHAR_TOKEN('<'));
@@ -380,10 +378,10 @@ void Tokenizer::run() {
         }else if(ON('/') && is_appropriate_end_tag_token()){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('>') && is_appropriate_end_tag_token()){
-          m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
         }else if(isalpha(cp)){
-          m_tmp_token.m_start_or_end_tag.tag_name.push_back(isupper(cp) ? tolower(cp) : cp);
+          append_to_tag_token_tag_name(m_tmp_token, isupper(cp) ? tolower(cp) : cp);
           m_tmp_buffer.push_back(cp);
         }else{
           m_tokens.push_back(CHAR_TOKEN('<'));
@@ -489,64 +487,51 @@ void Tokenizer::run() {
           m_state = TokenizerState::AfterAttributeNameState;
           m_cursor--;
         }else if(ON('=')){
-          m_tokens.back().m_start_or_end_tag.attributes.push_back(
-            construct_attribute(std::string(1, cp), "")
-          );
+          append_attribute_to_tag_token(m_tmp_token, cp, "");
           m_state = TokenizerState::AttributeNameState;
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.push_back(
-            construct_attribute(std::string(1, cp), "")
-          );
+          append_attribute_to_tag_token(m_tmp_token, cp, "");
           m_state = TokenizerState::AttributeNameState;
         }
         break;
-      // TODO: START HERE
       case TokenizerState::AttributeNameState:
-        if(isspace(cp)){
+        //TODO: this allows for duplicate attribute names
+        if(is_tab_lf_ff_space(cp) || ON('/') || ON('>')){
           m_state = TokenizerState::AfterAttributeNameState;
-        }else if(ON('/')){
-          m_state = TokenizerState::SelfClosingStartTagState;
+          m_cursor--;
         }else if(ON('=')){
           m_state = TokenizerState::BeforeAttributeValueState;
-        }else if(ON('>')){
-          m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
-        }else if(isalpha(cp)){
-          m_tokens.back().m_start_or_end_tag.attributes.back().name.push_back(cp);
+        }else if(ON('\0')){
+          append_to_tag_token_attribute_name(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.back().name.push_back(cp);
+          append_to_tag_token_attribute_name(m_tmp_token, cp);
         }
         break;
       case TokenizerState::AfterAttributeNameState:
-        if(isspace(cp)){
-          continue;
+        if(is_tab_lf_ff_space(cp)){
+          ; // pass
         }else if(ON('/')){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('=')){
           m_state = TokenizerState::BeforeAttributeValueState;
         }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
-        }else if(isalpha(cp)){
-          m_tokens.back().m_start_or_end_tag.attributes.push_back(construct_attribute());
-          m_state = TokenizerState::AttributeNameState;
-          m_cursor--;
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.push_back(construct_attribute());
-          m_cursor--;
+          append_attribute_to_tag_token(m_tmp_token, "", "");
           m_state = TokenizerState::AttributeNameState;
+          m_cursor--;
         }
-        break;
       case TokenizerState::BeforeAttributeValueState:
-        if(isspace(cp)){
-          continue;
+        if(is_tab_lf_ff_space(cp)){
+          ; // pass
         }else if(ON('"')){
           m_state = TokenizerState::AttributeValueDoubleQuotedState;
-        }else if(ON('\')'){
+        }else if(ON('\'')){
           m_state = TokenizerState::AttributeValueSingleQuotedState;
         }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
         }else{
           m_state = TokenizerState::AttributeValueUnquotedState;
           m_cursor--;
@@ -558,47 +543,47 @@ void Tokenizer::run() {
         }else if(ON('&')){
           set_return_state(TokenizerState::AttributeValueDoubleQuotedState);
           m_state = TokenizerState::CharacterReferenceState;
-        }else if(cp == '\0'){
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back('\xEF\xBF\xBD');
+        }else if(ON('\0')){
+          append_to_tag_token_attribute_value(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back(cp);
+          append_to_tag_token_attribute_value(m_tmp_token, cp);
         }
         break;
       case TokenizerState::AttributeValueSingleQuotedState:
-        if(ON('\')'){
+        if(ON('\'')){
           m_state = TokenizerState::AfterAttributeValueQuotedState;
         }else if(ON('&')){
           set_return_state(TokenizerState::AttributeValueSingleQuotedState);
           m_state = TokenizerState::CharacterReferenceState;
-        }else if(cp == '\0'){
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back('\xEF\xBF\xBD');
+        }else if(ON('\0')){
+          append_to_tag_token_attribute_value(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back(cp);
+          append_to_tag_token_attribute_value(m_tmp_token, cp);
         }
         break;
       case TokenizerState::AttributeValueUnquotedState:
-        if(isspace(cp)){
+        if(is_tab_lf_ff_space(cp)){
           m_state = TokenizerState::BeforeAttributeNameState;
         }else if(ON('&')){
           set_return_state(TokenizerState::AttributeValueUnquotedState);
           m_state = TokenizerState::CharacterReferenceState;
         }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
-        }else if(cp == '\0'){
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back('\xEF\xBF\xBD');
+        }else if(ON('\0')){
+          append_to_tag_token_attribute_value(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_tokens.back().m_start_or_end_tag.attributes.back().value.push_back(cp);
+          append_to_tag_token_attribute_value(m_tmp_token, cp);
         }
         break;
       case TokenizerState::AfterAttributeValueQuotedState:
-        if(isspace(cp)){
+        if(is_tab_lf_ff_space(cp)){
           m_state = TokenizerState::BeforeAttributeNameState;
         }else if(ON('/')){
           m_state = TokenizerState::SelfClosingStartTagState;
         }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
         }else{
           m_state = TokenizerState::BeforeAttributeNameState;
           m_cursor--;
@@ -606,32 +591,131 @@ void Tokenizer::run() {
         break;
       case TokenizerState::SelfClosingStartTagState:
         if(ON('>')){
-          m_tokens.back().m_start_or_end_tag.self_closing = true;
+          set_tag_self_closing_flag(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
           m_state = TokenizerState::DataState;
-          m_tokens.push_back(std::move(construct_token()));
         }else{
           m_state = TokenizerState::BeforeAttributeNameState;
           m_cursor--;
         }
         break;
-      case TokenizerState::CharacterReferenceState:
-        if(ON('x')){
-          m_state = TokenizerState::CharacterReferenceHexState;
+      case TokenizerState::BogusCommentState:
+        if(ON('>')){
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
+        }else if(ON('\0')){
+          append_to_comment_or_character_data(m_tmp_token, REPLACEMENT_STR);
         }else{
-          m_state = TokenizerState::CharacterReferenceDecimalState;
+          append_to_comment_or_character_data(m_tmp_token, cp);
+        }
+        break;
+      case TokenizerState::MarkupDeclarationOpenState:
+        // TODO: check next few characters!
+        break;
+      case TokenizerState::CommentStartState:
+        if(ON('-')){
+          m_state = TokenizerState::CommentStartDashState;
+        }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
+        }else{
+          m_state = TokenizerState::CommentState;
           m_cursor--;
         }
         break;
-      case TokenizerState::CharacterReferenceDecimalState:
-        if(isdigit(cp)){
-          m_state = TokenizerState::CharacterReferenceDecimalState;
-          m_cursor--;
-        }else if(ON(';')){
-          m_state = m_return_state;
+      case TokenizerState::CommentStartDashState:
+        if(ON('-')){
+          m_state = TokenizerState::CommentEndState;
+        }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
         }else{
-          m_state = m_return_state;
+          append_to_comment_or_character_data(m_tmp_token, '-');
+          m_state = TokenizerState::CommentState;
           m_cursor--;
         }
+        break;
+      case TokenizerState::CommentState:
+        if(ON('<')){
+          append_to_comment_or_character_data(m_tmp_token, '<');
+          m_state = TokenizerState::CommentLessThanSignState;
+        }else if(ON('-')){
+          m_state = TokenizerState::CommentEndDashState;
+        }else if(ON('\0')){
+          append_to_comment_or_character_data(m_tmp_token, REPLACEMENT_STR);
+        }else{
+          append_to_comment_or_character_data(m_tmp_token, cp);
+        }
+        break;
+      case TokenizerState::CommentLessThanSignState:
+        if(ON('!')){
+          append_to_comment_or_character_data(m_tmp_token, cp);
+          m_state = TokenizerState::CommentLessThanSignBangState;
+        }else if(ON('<')){
+          append_to_comment_or_character_data(m_tmp_token, '<');
+        }else{
+          m_state = TokenizerState::CommentState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::CommentLessThanSignBangState:
+        if(ON('-')){
+          m_state = TokenizerState::CommentLessThanSignBangDashState;
+        }else{
+          m_state = TokenizerState::CommentState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::CommentLessThanSignBangDashState:
+        if(ON('-')){
+          m_state = TokenizerState::CommentLessThanSignBangDashDashState;
+        }else{
+          m_state = TokenizerState::CommentEndDashState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::CommentLessThanSignBangDashDashState:
+        m_state = TokenizerState::CommentEndState;
+        m_cursor--;
+        break;
+      case TokenizerState::CommentEndDashState:
+        if(ON('-')){
+          m_state = TokenizerState::CommentEndState;
+        }else{
+          append_to_comment_or_character_data(m_tmp_token, '-');
+          m_state = TokenizerState::CommentState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::CommentEndState:
+        if(ON('>')){
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
+        }else if(ON('!')){
+          m_state = TokenizerState::CommentEndBangState;
+        }else if(ON('-')){
+          append_to_comment_or_character_data(m_tmp_token, '-');
+        }else{
+          append_to_comment_or_character_data(m_tmp_token, "--");
+          m_state = TokenizerState::CommentState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::CommentEndBangState:
+        if(ON('-')){
+          append_to_comment_or_character_data(m_tmp_token, "--!");
+          m_state = TokenizerState::CommentEndDashState;
+        }else if(ON('>')){
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
+        }else{
+          append_to_comment_or_character_data(m_tmp_token, "--!");
+          m_state = TokenizerState::CommentState;
+          m_cursor--;
+        }
+        break;
+      case TokenizerState::DoctypeNameState:
+        //TODO: Start here
         break;
     }
 
