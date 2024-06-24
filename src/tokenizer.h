@@ -3,6 +3,7 @@
 #include <optional>
 #include "tokenizer_state.h"
 #include "token.h"
+#include "named_character_ref.h"
 
 class Tokenizer {
   public:
@@ -17,6 +18,7 @@ class Tokenizer {
   bool in_simd_state();
   void set_return_state(TokenizerState state);
   bool is_appropriate_end_tag_token();
+  bool is_attribute_return_state();
 
   std::string m_contents;
   size_t m_cursor;
@@ -26,4 +28,5 @@ class Tokenizer {
 
   TokenizerState m_state;
   TokenizerState m_return_state;
+  NamedCharacterRef m_named_char_ref;
 };
