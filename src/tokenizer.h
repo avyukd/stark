@@ -9,6 +9,7 @@ class Tokenizer {
   public:
   Tokenizer(const std::string&);
   void run();
+  std::vector<Token> get_tokens();
 
   private:
   using TokenizerState = TokenizerNamespace::TokenizerState; 

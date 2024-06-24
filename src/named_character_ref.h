@@ -1,20 +1,24 @@
 #pragma once 
 #include <unordered_map>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <optional>
+#include <iostream>
 
 #include "json.hpp"
 
 using json = nlohmann::json;
 
-static const std::string file_name = "named_characters.json";
+static const std::string file_path = "../src/named_characters.json";
 
 class NamedCharacterRef {
   public:
   NamedCharacterRef(){
-    std::ifstream file(file_name);
-    json j; j << file;
+    std::ifstream file(file_path);
+    std::stringstream ss; ss << file.rdbuf();
+    json j = json::parse(ss.str());
+
     for (auto& [key, value] : j.items()) {
       m_named_char_to_unicode_chars[key] = value["characters"];
     }

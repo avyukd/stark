@@ -1051,3 +1051,7 @@ bool Tokenizer::is_appropriate_end_tag_token() {
   }
   return false;
 }
+
+std::vector<Token> Tokenizer::get_tokens(){
+  return m_tokens;
+}

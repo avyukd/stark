@@ -47,50 +47,65 @@ Token construct_end_tag_token(const std::string& tag_name){
   return token;
 }
 
-template <typename name_t, typename value_t>
-void append_attribute_to_tag_token(Token& token, const name_t& name, const value_t& value){
-  token.m_start_or_end_tag.attributes.push_back(construct_attribute(name, value));
-}
-
-template <typename string_like_t>
-void append_to_tag_token_attribute_name(Token& token, const string_like_t& data){
-  token.m_start_or_end_tag.attributes.back().name += data;
-}
-
-template <typename string_like_t>
-void append_to_tag_token_attribute_value(Token& token, const string_like_t& data){
-  token.m_start_or_end_tag.attributes.back().value += data;
-}
-
-template <typename string_like_t>
-void append_to_tag_token_tag_name(Token& token, const string_like_t& data){
-  token.m_start_or_end_tag.tag_name += data;
-}
-
-template <typename string_like_t>
-void append_to_comment_or_character_data(Token& token, const string_like_t& data){
-  token.m_comment_or_character.data += data;
+void set_force_quirks(Token& token){
+  token.m_doctype.force_quirks = true;
 }
 
 void set_tag_self_closing_flag(Token& token){
   token.m_start_or_end_tag.self_closing = true;
 }
 
-template <typename string_like_t>
-void append_to_doctype_token_name(Token& token, string_like_t data){
-  token.m_doctype.name += data;
+std::string get_token_type_string(const Token::TokenType tt){
+  switch (tt)
+  {
+    case Token::TokenType::NOT_SET:
+      return "NOT_SET";
+    case Token::TokenType::DOCTYPE:
+      return "DOCTYPE";
+    case Token::TokenType::START_TAG:
+      return "START_TAG";
+    case Token::TokenType::END_TAG:
+      return "END_TAG";
+    case Token::TokenType::COMMENT:
+      return "COMMENT";
+    case Token::TokenType::CHARACTER:
+      return "CHARACTER";
+    case Token::TokenType::END_OF_FILE:
+      return "END_OF_FILE";
+  }
 }
 
-template <typename string_like_t>
-void append_to_doctype_token_public_identifier(Token& token, const string_like_t& data) {
-  token.m_doctype.public_identifier += data;
-}
-
-template <typename string_like_t>
-void append_to_doctype_token_system_identifier(Token& token, const string_like_t& data){
-  token.m_doctype.system_identifier += data;
-}
-
-void set_force_quirks(Token& token){
-  token.m_doctype.force_quirks = true;
+std::string to_string(const Token& token){
+  std::string ret;
+  ret += get_token_type_string(token.token_type) + ", ";
+  switch (token.token_type)
+  {
+    case Token::TokenType::NOT_SET:
+      ret += "NULL";
+      break;
+    case Token::TokenType::DOCTYPE:
+      ret += "name: " + token.m_doctype.name + ", ";
+      ret += "public_identifier: " + token.m_doctype.public_identifier + ", ";
+      ret += "system_identifier: " + token.m_doctype.system_identifier + ", ";
+      ret += "force_quirks: " + std::to_string(token.m_doctype.force_quirks);
+      break;
+    case Token::TokenType::START_TAG:
+    case Token::TokenType::END_TAG:
+      ret += "tag_name: " + token.m_start_or_end_tag.tag_name + ", ";
+      ret += "self_closing: " + std::to_string(token.m_start_or_end_tag.self_closing) + ", ";
+      ret += "attributes: [";
+      for (const attribute& attr : token.m_start_or_end_tag.attributes) {
+        ret += "{name: " + attr.name + ", value: " + attr.value + "}, ";
+      }
+      ret += "]";
+      break;
+    case Token::TokenType::COMMENT:
+    case Token::TokenType::CHARACTER:
+      ret += "data: " + token.m_comment_or_character.data;
+      break;
+    case Token::TokenType::END_OF_FILE:
+      ret += "NULL";
+      break;
+  }
+  return ret;
 }
