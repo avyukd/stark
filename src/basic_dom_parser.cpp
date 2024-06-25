@@ -1,4 +1,5 @@
 #include "basic_dom_parser.h"
+#include "utils.h"
 #include <queue>
 #include <ostream>
 
@@ -11,6 +12,7 @@ BasicDomParser::BasicDomParser() :
 
 void BasicDomParser::push_data_str_to_current_node(){
   if(!std::all_of(m_data_str.begin(), m_data_str.end(), isspace)){
+    trim(m_data_str);
     m_current_node->m_children.push_back(construct_text_node(m_data_str, m_current_node));
     m_data_str = "";
   }
@@ -68,16 +70,16 @@ void BasicDomParser::consume_token(const Token& token){
 }
 
 void BasicDomParser::print_tree(std::ostream& os) const {
-  // bfs with depth
-  std::queue<std::pair<DomNode*, size_t>> q;
-  q.push({m_root.get(), 0});
+  // dfs with depth
+  std::vector<std::pair<DomNode*, size_t>> s;
+  s.push_back({m_root.get(), 0});
 
-  while(!q.empty()){
-    auto [node, depth] = q.front(); q.pop();
+  while(!s.empty()){
+    auto [node, depth] = s.back(); s.pop_back();
     for(size_t i = 0; i < depth; i++) os << '\t';
     os << to_string(*node) << '\n';
     for(auto& child : node->m_children){
-      q.push({child.get(), depth + 1});
+      s.push_back({child.get(), depth + 1});
     }
   }
 }
