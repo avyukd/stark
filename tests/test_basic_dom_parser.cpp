@@ -51,6 +51,7 @@ std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
     if(token_type == "CHARACTER"){
       std::string _; ss >> _; // junk
       char value; ss >> value;
+      if(ss.eof()) value = ' '; // TODO: not clean, hack to handle space character
       tokens.push_back(construct_character_token(value));
       continue;
     }
@@ -84,7 +85,7 @@ int main (int argc, char** argv){
     std::ifstream file(input_root_prefix + file_name);
 
     std::vector<Token> tokens = get_tokens_from_test_input(file);
-    std::cout << "Tokens: " << tokens.size() << std::endl;
+    std::cout << "Num tokens: " << tokens.size() << std::endl;
     BasicDomParser parser;
     for(auto& token : tokens){
       parser.consume_token(token);

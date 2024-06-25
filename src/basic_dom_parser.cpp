@@ -10,7 +10,7 @@ BasicDomParser::BasicDomParser() :
 {}
 
 void BasicDomParser::push_data_str_to_current_node(){
-  if(m_data_str != ""){
+  if(!std::all_of(m_data_str.begin(), m_data_str.end(), isspace)){
     m_current_node->m_children.push_back(construct_text_node(m_data_str, m_current_node));
     m_data_str = "";
   }
@@ -29,6 +29,7 @@ void BasicDomParser::consume_token(const Token& token){
       if(token.m_start_or_end_tag.tag_name == "html" && !m_seen_html_tag){
         m_seen_html_tag = true;
         init_tag_node(*m_current_node, token);
+        m_data_str = ""; // ignore any data before html tag
       } else {
         if(!m_seen_html_tag) [[unlikely]] {
           m_seen_html_tag = true;

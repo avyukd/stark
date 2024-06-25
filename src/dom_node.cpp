@@ -31,7 +31,7 @@ std::unique_ptr<DomNode> construct_text_node(const std::string& data, DomNode* p
 std::string to_string(const DomNode& node) {
   const size_t max_len = 50;
 
-  std::string s;
+  std::string s = "";
   switch(node.m_node_type){
     case DomNode::DomNodeType::ELEMENT_NODE:
       s += upper_case(node.m_element_node.tag_name) + ": ";
