@@ -1,4 +1,6 @@
 #include "basic_dom_parser.h"
+#include <queue>
+#include <ostream>
 
 BasicDomParser::BasicDomParser() : 
   m_root{std::make_unique<DomNode>()},
@@ -55,9 +57,26 @@ void BasicDomParser::consume_token(const Token& token){
 
       // todo: more informative error msg
       if(m_current_node->m_element_node.tag_name != token.m_start_or_end_tag.tag_name)
-        throw std::runtime_error("Mismatched start and end tags.");
+        throw std::runtime_error("Mismatched start and end tags: "
+          + m_current_node->m_element_node.tag_name + " " 
+          + token.m_start_or_end_tag.tag_name);
       
       m_current_node = m_current_node->m_parent;
       break;
   };
+}
+
+void BasicDomParser::print_tree(std::ostream& os) const {
+  // bfs with depth
+  std::queue<std::pair<DomNode*, size_t>> q;
+  q.push({m_root.get(), 0});
+
+  while(!q.empty()){
+    auto [node, depth] = q.front(); q.pop();
+    for(size_t i = 0; i < depth; i++) os << '\t';
+    os << to_string(*node) << '\n';
+    for(auto& child : node->m_children){
+      q.push({child.get(), depth + 1});
+    }
+  }
 }

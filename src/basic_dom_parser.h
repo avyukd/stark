@@ -2,6 +2,9 @@
 This is a non-spec compliant DOM parser. 
 It builds a tree from tags and text nodes.
 Input is a stream of tokens.
+
+TODO:
+account for self closing tags
 */
 #pragma once
 #include "token.h"
@@ -12,6 +15,7 @@ class BasicDomParser {
     BasicDomParser();
     void consume_token(const Token&);
     void push_data_str_to_current_node();
+    void print_tree(std::ostream& os) const;
 
   private:
     std::unique_ptr<DomNode> m_root;

@@ -1,0 +1,65 @@
+CHARACTER, data: !
+CHARACTER, data: D
+CHARACTER, data: O
+CHARACTER, data: C
+CHARACTER, data: T
+CHARACTER, data: Y
+CHARACTER, data: P
+CHARACTER, data: E
+CHARACTER, data:  
+CHARACTER, data: h
+CHARACTER, data: t
+CHARACTER, data: m
+CHARACTER, data: l
+CHARACTER, data: >
+CHARACTER, data: 
+
+START_TAG, tag_name: html, self_closing: 0, attributes: []
+CHARACTER, data: 
+
+START_TAG, tag_name: head, self_closing: 0, attributes: []
+CHARACTER, data: 
+
+CHARACTER, data:  
+CHARACTER, data:  
+CHARACTER, data:  
+CHARACTER, data:  
+START_TAG, tag_name: title, self_closing: 0, attributes: []
+CHARACTER, data: S
+CHARACTER, data: i
+CHARACTER, data: m
+CHARACTER, data: p
+CHARACTER, data: l
+CHARACTER, data: e
+CHARACTER, data:  
+CHARACTER, data: H
+CHARACTER, data: T
+CHARACTER, data: M
+CHARACTER, data: L
+END_TAG, tag_name: title, self_closing: 0, attributes: []
+CHARACTER, data: 
+
+CHARACTER, data:  
+CHARACTER, data:  
+CHARACTER, data:  
+CHARACTER, data:  
+START_TAG, tag_name: p, self_closing: 0, attributes: []
+CHARACTER, data: H
+CHARACTER, data: e
+CHARACTER, data: l
+CHARACTER, data: l
+CHARACTER, data: o
+CHARACTER, data:  
+CHARACTER, data: W
+CHARACTER, data: o
+CHARACTER, data: r
+CHARACTER, data: l
+CHARACTER, data: d
+CHARACTER, data: !
+END_TAG, tag_name: p, self_closing: 0, attributes: []
+CHARACTER, data: 
+
+END_TAG, tag_name: head, self_closing: 0, attributes: []
+CHARACTER, data: 
+
+END_TAG, tag_name: html, self_closing: 0, attributes: []

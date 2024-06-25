@@ -5,7 +5,14 @@
 
 #include "basic_dom_parser.h"
 
-const std::string html_root_prefix = "../tests/input/";
+/*
+TODO: 
+- meta and link tags are self-closing -- should this be marked by tokenizer or is it an error on dom side? either way parser doesn't handle
+- think its probably not self closing (tokenizer is fine), and parser should handle by knowing link and meta don't require a close tag in html 5...
+- link and meta don't have content so that is one workaround
+*/
+
+const std::string input_root_prefix = "../tests/input/";
 const std::string tokens_suffix = ".tokens";
 
 void strip_comma(std::string& s){
@@ -13,7 +20,21 @@ void strip_comma(std::string& s){
 }
 
 std::vector<attribute> parse_attributes_from_string(std::string& attribute_str){
-  // todo implement
+  std::vector<attribute> attributes;
+  for(size_t i = 0; i < attribute_str.size(); i++){
+    if(attribute_str[i] == '{'){
+      i += sizeof("name: ");
+      size_t j = i; while(attribute_str[j] != ','){ j++; }
+      std::string name = attribute_str.substr(i, j - i);
+      i = j + 1;
+
+      i += sizeof("value: ");
+      j = i; while(attribute_str[j] != '}'){ j++; }
+      std::string value = attribute_str.substr(i, j - i);
+      i = j;
+    }
+  }
+  return attributes;
 }
 
 std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
@@ -21,6 +42,8 @@ std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
   
   std::string line;
   while(std::getline(fs, line)){
+    if(line == "") continue; // skip empty lines
+
     std::stringstream ss(line);
     std::string token_type;
     ss >> token_type; strip_comma(token_type);
@@ -29,6 +52,7 @@ std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
       std::string _; ss >> _; // junk
       char value; ss >> value;
       tokens.push_back(construct_character_token(value));
+      continue;
     }
 
     // start tag or end tag
@@ -42,7 +66,13 @@ std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
     ss >> _; // skip over attributes
     std::string attribute_str; std::getline(ss, attribute_str);
     std::vector<attribute> attributes = parse_attributes_from_string(attribute_str);
+
+    Token t = ((token_type == "START_TAG") ? construct_start_tag_token(tag_name) : construct_end_tag_token(tag_name));
+    if(self_closing) set_tag_self_closing_flag(t);
+    t.m_start_or_end_tag.attributes = attributes;
+    tokens.push_back(std::move(t));
   }
+  return tokens;
 }
 
 int main (int argc, char** argv){
@@ -51,10 +81,18 @@ int main (int argc, char** argv){
     std::cout << "Test " << i << " of " << (argc - 1) << ": " << argv[i] << std::endl; 
 
     std::string file_name = argv[i]; file_name += tokens_suffix;
-    std::ifstream file(html_root_prefix + file_name);
+    std::ifstream file(input_root_prefix + file_name);
 
+    std::vector<Token> tokens = get_tokens_from_test_input(file);
+    std::cout << "Tokens: " << tokens.size() << std::endl;
+    BasicDomParser parser;
+    for(auto& token : tokens){
+      parser.consume_token(token);
     }
+
+    parser.print_tree(std::cout);
+
   }
-
-
 }
+
+

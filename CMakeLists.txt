@@ -19,3 +19,6 @@ file(GLOB STARK_SRC
 
 add_executable(test_tokenizer ${STARK_TESTS_DIR}/test_tokenizer.cpp ${STARK_HEADERS} ${STARK_SRC})
 target_include_directories(test_tokenizer PUBLIC ${STARK_CODE_DIR})
+
+add_executable(test_parser ${STARK_TESTS_DIR}/test_basic_dom_parser.cpp ${STARK_HEADERS} ${STARK_SRC})
+target_include_directories(test_parser PUBLIC ${STARK_CODE_DIR})
