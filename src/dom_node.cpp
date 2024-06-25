@@ -1,5 +1,6 @@
 #include "dom_node.h"
 #include "utils.h"
+#include <iostream>
 
 void init_tag_node(DomNode& node, const Token& token){
   node.m_node_type = DomNode::DomNodeType::ELEMENT_NODE;
@@ -10,6 +11,7 @@ void init_tag_node(DomNode& node, const Token& token){
   for(const attribute& attribute : token_attrs){
     node.m_element_node.attributes.push_back(attribute);
   }
+  node.m_element_node.self_closing = token.m_start_or_end_tag.self_closing;
 }
 
 

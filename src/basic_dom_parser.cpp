@@ -1,5 +1,8 @@
 #include "basic_dom_parser.h"
+#include "tag_utils.h"
 #include "utils.h"
+#include "constants.h"
+
 #include <queue>
 #include <ostream>
 
@@ -28,25 +31,30 @@ void BasicDomParser::consume_token(const Token& token){
     case Token::TokenType::COMMENT:
       break;
     case Token::TokenType::START_TAG:
-      if(token.m_start_or_end_tag.tag_name == "html" && !m_seen_html_tag){
+      if(token.m_start_or_end_tag.tag_name == HTML_TAG && !m_seen_html_tag){
         m_seen_html_tag = true;
         init_tag_node(*m_current_node, token);
         m_data_str = ""; // ignore any data before html tag
       } else {
         if(!m_seen_html_tag) [[unlikely]] {
           m_seen_html_tag = true;
-          init_tag_node(*m_current_node, construct_start_tag_token("html"));
+          init_tag_node(*m_current_node, construct_start_tag_token(HTML_TAG));
         }else{
           push_data_str_to_current_node();
         }
 
-        auto tag_node = construct_tag_node(token, m_current_node); auto tmp = tag_node.get();
+        auto tag_node = construct_tag_node(token, m_current_node); auto tag_node_ptr = tag_node.get();
+        if(is_void_tag(tag_node_ptr->m_element_node.tag_name))
+          tag_node_ptr->m_element_node.self_closing = true;
+
         m_current_node->m_children.push_back(std::move(tag_node));
-        m_current_node = tmp;
+
+        if(!tag_node_ptr->m_element_node.self_closing)
+          m_current_node = tag_node_ptr;
       }
       break;
     case Token::TokenType::END_TAG:
-      if(token.m_start_or_end_tag.tag_name == "html"){
+      if(token.m_start_or_end_tag.tag_name == HTML_TAG){
         if(!m_seen_html_tag) [[unlikely]] {
           throw std::runtime_error("Unexpected html end tag.");
         }else{

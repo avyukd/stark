@@ -1,0 +1,20 @@
+#pragma once
+
+#define HTML_TAG "html"
+
+#define AREA_TAG "area"
+#define BASE_TAG "base"
+#define BR_TAG "br"
+#define COL_TAG "col"
+#define COMMAND_TAG "command"
+#define EMBED_TAG "embed"
+#define HR_TAG "hr"
+#define IMG_TAG "img"
+#define INPUT_TAG "input"
+#define KEYGEN_TAG "keygen"
+#define LINK_TAG "link"
+#define META_TAG "meta"
+#define PARAM_TAG "param"
+#define SOURCE_TAG "source"
+#define TRACK_TAG "track"
+#define WBR_TAG "wbr"

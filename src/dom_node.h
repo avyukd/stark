@@ -19,6 +19,7 @@ struct DomNode {
   struct {
     std::string tag_name;
     std::vector<attribute> attributes;
+    bool self_closing;
   } m_element_node;
 
   struct {

@@ -32,6 +32,8 @@ std::vector<attribute> parse_attributes_from_string(std::string& attribute_str){
       j = i; while(attribute_str[j] != '}'){ j++; }
       std::string value = attribute_str.substr(i, j - i);
       i = j;
+
+      attributes.push_back({name, value});
     }
   }
   return attributes;
