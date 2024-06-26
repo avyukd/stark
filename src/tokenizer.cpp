@@ -83,6 +83,7 @@ void Tokenizer::run() {
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
+        break;
       case TokenizerState::RawTextState:
         if(ON('<')){
           m_state = TokenizerState::RawTextLessThanSignState;
@@ -517,6 +518,7 @@ void Tokenizer::run() {
           m_state = TokenizerState::AttributeNameState;
           m_cursor--;
         }
+        break;
       case TokenizerState::BeforeAttributeValueState:
         if(is_tab_lf_ff_space(cp)){
           ; // pass
