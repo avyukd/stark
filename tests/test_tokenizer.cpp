@@ -20,7 +20,9 @@ int main (int argc, char** argv){
     buffer << file.rdbuf();
     std::string contents = buffer.str();
 
-    Tokenizer tokenizer{contents};
+    Tokenizer tokenizer{contents, TokenizerOptions{
+      .use_simd = true
+    }};
     tokenizer.run();
 
     std::vector<Token> tokens = tokenizer.get_tokens();
