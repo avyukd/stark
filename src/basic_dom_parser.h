@@ -16,6 +16,7 @@ class BasicDomParser {
     void consume_token(const Token&);
     void push_data_str_to_current_node();
     void print_tree(std::ostream& os) const;
+    std::unique_ptr<DomNode> get_root();
 
   private:
     std::unique_ptr<DomNode> m_root;
