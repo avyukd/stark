@@ -89,7 +89,7 @@ void BasicDomParser::print_tree(std::ostream& os) const {
   while(!s.empty()){
     auto [node, depth] = s.back(); s.pop_back();
     for(size_t i = 0; i < depth; i++) os << '\t';
-    os << to_string(*node) << '\n';
+    os << node->to_string() << '\n';
     for(auto& child : node->m_children){
       s.push_back({child.get(), depth + 1});
     }

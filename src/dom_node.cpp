@@ -99,16 +99,14 @@ std::string DomNode::get_tag_str(
   }
 }
 
-// TODO: change old C-style to C++ style impl
-
-std::string to_string(const DomNode& node) {
+std::string DomNode::to_string() const {
   const size_t max_len = 50;
 
   std::string s = "";
-  switch(node.m_node_type){
+  switch(m_node_type){
     case DomNode::DomNodeType::ELEMENT_NODE:
-      s += upper_case(node.m_element_node.tag_name) + ": ";
-      for(const attribute& attr : node.m_element_node.attributes){
+      s += upper_case(m_element_node.tag_name) + ": ";
+      for(const attribute& attr : m_element_node.attributes){
         if(s.size() + attr.name.size() + attr.value.size() + 5 > max_len){
           s += " ...";
           break;
@@ -117,10 +115,10 @@ std::string to_string(const DomNode& node) {
       }
       break;
     case DomNode::DomNodeType::TEXT_NODE:
-      s += node.m_text_or_comment_node.data.substr(0, max_len);
+      s += m_text_or_comment_node.data.substr(0, max_len);
       break;
     case DomNode::DomNodeType::COMMENT_NODE:
-      s += "<!--" + node.m_text_or_comment_node.data.substr(0, max_len - 7) + "-->";
+      s += "<!--" + m_text_or_comment_node.data.substr(0, max_len - 7) + "-->";
       break;
   }
   return s;

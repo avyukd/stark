@@ -8,9 +8,6 @@ class DomNode {
   friend class BasicDomParser;
   friend class Stark;
 
-  // TODO: make the below functions part of class definition
-  friend std::string to_string(const DomNode& node);
-
   public:
 
   DomNode() = default;
@@ -53,8 +50,6 @@ class DomNode {
   std::string get_attr_str() const;
   void init_tag_node(const Token& token);
 
+  std::string to_string() const;
 };
 
-
-void init_tag_node(DomNode& node, const Token& token);
-std::string to_string(const DomNode& node);
