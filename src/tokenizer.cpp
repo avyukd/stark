@@ -1,6 +1,7 @@
 #include <cassert>
 #include "tokenizer.h"
 #include "utils.h"
+#include "simd_utils.h"
 
 /*
 TODO:
@@ -25,12 +26,13 @@ TODO:
                             EMIT_CHAR_TOKENS(m_tmp_buffer); \
                           } 
 
-Tokenizer::Tokenizer(const std::string& contents) : 
+Tokenizer::Tokenizer(const std::string& contents, TokenizerOptions options) : 
   m_contents{contents}, m_cursor{0}, 
   m_state{TokenizerState::DataState},
   m_return_state{m_state},
   m_tmp_buffer{},
-  m_named_char_ref{}
+  m_named_char_ref{},
+  m_options{options}
 {
   m_tokens.reserve(contents.size());
   reset_token(m_tmp_token);
@@ -38,24 +40,27 @@ Tokenizer::Tokenizer(const std::string& contents) :
 
 void Tokenizer::run() {
   while(true){
-  
-    // if(in_simd_state()){
-    //   std::optional<size_t> opt_state_change_char_pos = simd_next_pos();
-    //   if(!opt_state_change_char_pos.has_value()){
-    //     // add chunk to m_tokens
-    //     // set m_cursor
-    //     continue;
-    //   }else{
-    //     size_t state_change_char_pos = opt_state_change_char_pos.value();
-    //     // add chunk to m_tokens
-    //     m_cursor = state_change_char_pos;
-    //   }
-    // }else{
-    //   advance();
-    // }
-    if(!advance()) break;
+    if(m_cursor >= m_contents.size()) break;
 
-    char cp = m_contents[m_cursor];
+    // todo check bounds here?
+    if(m_options.use_simd){
+      if(std::string needles = in_simd_emit_char_state(); needles != ""){
+        auto state_change_pos_opt = simd_state_change(needles);
+        size_t safe_adv_amount = std::min((int) (m_contents.size() - m_cursor), SIMD_SEARCH_SIZE);
+        if(state_change_pos_opt.has_value()){
+          safe_adv_amount = state_change_pos_opt.value();
+        }
+        for(size_t i = 0 ; i < safe_adv_amount; i++){
+          EMIT_CHAR_TOKEN(m_contents[m_cursor++]);
+        }
+        if(!state_change_pos_opt.has_value()){
+          continue;
+        }
+        // else: pass and continue into state change
+      } 
+    }
+
+    char cp = m_contents[m_cursor++];
     switch(m_state) {
       case TokenizerState::DataState:
         if(ON('&')){
@@ -231,6 +236,7 @@ void Tokenizer::run() {
           m_state = TokenizerState::RawTextState;
           m_cursor--;
         }
+        break;
       case TokenizerState::ScriptDataLessThanSignState:
         if(ON('/')){
           m_tmp_buffer = "";
@@ -1015,6 +1021,11 @@ void Tokenizer::run() {
   }
 }
 
+std::optional<size_t> Tokenizer::simd_state_change(const std::string& needles){
+  std::string search_str = m_contents.substr(m_cursor, SIMD_SEARCH_SIZE);
+  return simd_next_pos(search_str, needles);
+}
+
 bool Tokenizer::advance(){
   m_cursor++; 
   return m_cursor < m_contents.size();
@@ -1023,12 +1034,23 @@ bool Tokenizer::advance(){
 /*
 if current state has transitions that are a subset of SIMD states, return true.
 */
-bool Tokenizer::in_simd_state() {
-  return m_state == TokenizerState::DataState ||
-         m_state == TokenizerState::RcDataState ||
-         m_state == TokenizerState::RawTextState ||
-         m_state == TokenizerState::ScriptDataState ||
-         m_state == TokenizerState::PlainTextState;
+std::string Tokenizer::in_simd_emit_char_state() const {
+  switch(m_state) {
+    case TokenizerState::DataState:
+    case TokenizerState::RcDataState:
+      return "<&\r\0"; //TODO: this may not allow checking '\0' properly!!! 
+    case TokenizerState::RawTextState:
+    case TokenizerState::ScriptDataState:
+      return "<\0";
+    case TokenizerState::PlainTextState:
+      return "\0";
+    case TokenizerState::ScriptDataEscapedState:
+    case TokenizerState::ScriptDataDoubleEscapedState:
+      return "-<\0";
+    default:
+      return "";
+  }
+
 }
 
 void Tokenizer::set_return_state(TokenizerState state) {
