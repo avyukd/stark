@@ -22,3 +22,6 @@ target_include_directories(test_tokenizer PUBLIC ${STARK_CODE_DIR})
 
 add_executable(test_parser ${STARK_TESTS_DIR}/test_basic_dom_parser.cpp ${STARK_HEADERS} ${STARK_SRC})
 target_include_directories(test_parser PUBLIC ${STARK_CODE_DIR})
+
+add_executable(test_dom_node_integration ${STARK_TESTS_DIR}/test_dom_node_integration.cpp ${STARK_HEADERS} ${STARK_SRC})
+target_include_directories(test_dom_node_integration PUBLIC ${STARK_CODE_DIR})
