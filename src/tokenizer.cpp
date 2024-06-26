@@ -15,6 +15,8 @@ TODO:
 #define CHAR_TOKEN(x) construct_character_token(x)
 #define EMIT_CHAR_TOKEN(x) m_tokens.push_back(CHAR_TOKEN(x))
 #define COMMENT_TOKEN(x) construct_comment_token(x)
+#define EMPTY_DOCTYPE_TOKEN construct_empty_doctype_token()
+#define DOCTYPE_TOKEN(x) construct_doctype_token(x)
 #define START_TAG_TOKEN(x) construct_start_tag_token(x)
 #define END_TAG_TOKEN(x) construct_end_tag_token(x)
 #define REPLACEMENT_CHAR_TOKEN construct_character_token(REPLACEMENT_STR)
@@ -60,7 +62,7 @@ void Tokenizer::run() {
       } 
     }
 
-    char cp = m_contents[m_cursor++];
+    char cp = m_contents[m_cursor];
     switch(m_state) {
       case TokenizerState::DataState:
         if(ON('&')){
@@ -726,6 +728,26 @@ void Tokenizer::run() {
           m_cursor--;
         }
         break;
+      case TokenizerState::DoctypeState:
+        if(is_tab_lf_ff_space(cp)){
+          m_state = TokenizerState::BeforeDoctypeNameState;
+        }else{
+          m_state = TokenizerState::BeforeDoctypeNameState;
+          m_cursor--;
+        }
+      case TokenizerState::BeforeDoctypeNameState:
+        if(is_tab_lf_ff_space(cp)){
+          ; // pass
+        }else if(ON('>')){
+          m_tmp_token = EMPTY_DOCTYPE_TOKEN;
+          set_force_quirks(m_tmp_token);
+          EMIT_CURRENT_TOKEN;
+          m_state = TokenizerState::DataState;
+        }else{
+          m_tmp_token = DOCTYPE_TOKEN(isupper(cp) ? tolower(cp) : cp);
+          m_state = TokenizerState::DoctypeNameState;
+        }
+        break;
       case TokenizerState::DoctypeNameState:
         if(is_tab_lf_ff_space(cp)){
           m_state = TokenizerState::AfterDoctypeNameState;
@@ -1019,6 +1041,7 @@ void Tokenizer::run() {
       default:
         ASSERT_NOT_REACHED;
     }
+    m_cursor++;
 
   }
 }

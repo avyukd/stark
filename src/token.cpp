@@ -33,6 +33,18 @@ Token construct_comment_token(const std::string& data){
   return token;
 }
 
+Token construct_empty_doctype_token(){
+  Token token;
+  token.token_type = Token::TokenType::DOCTYPE;
+  return token;
+}
+
+Token construct_doctype_token(char c) {
+  Token token = construct_empty_doctype_token();
+  token.m_doctype.name = "" + c;
+  return token;
+}
+
 Token construct_start_tag_token(const std::string& tag_name){
   Token token;
   token.token_type = Token::TokenType::START_TAG;

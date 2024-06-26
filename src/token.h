@@ -39,6 +39,8 @@ Token construct_character_token(char);
 Token construct_character_token(const std::string&);
 std::vector<Token> construct_character_tokens(const std::string&);
 Token construct_comment_token(const std::string&);
+Token construct_empty_doctype_token();
+Token construct_doctype_token(char c);
 Token construct_start_tag_token(const std::string&);
 Token construct_end_tag_token(const std::string&);
 void set_tag_self_closing_flag(Token&);
