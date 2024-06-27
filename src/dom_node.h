@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <memory>
+#include <optional>
 #include "attribute.h"
 #include "token.h"
 
@@ -14,10 +15,16 @@ class DomNode {
   DomNode(const Token& token, DomNode* parent);
   DomNode(const std::string& data, DomNode* parent);
 
+  std::vector<const DomNode*> find_all_by_class(const std::string&) const;
+  std::vector<const DomNode*> find_by_id(const std::string&) const;
   std::vector<const DomNode*> find_all_by_tag(const std::string&) const;
+  
   std::vector<const DomNode*> search(
     std::function<bool(const DomNode&)> predicate
   ) const;
+
+  // todo: is this the best interface choice? optional? throw an error? empty string?
+  std::string operator[](const std::string&) const;
   
   // Node + children as HTML string
   std::string contents() const;

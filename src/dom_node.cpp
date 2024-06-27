@@ -30,6 +30,28 @@ DomNode::DomNode(const std::string& data, DomNode* parent){
   m_parent = parent;
 }
 
+std::vector<const DomNode*> DomNode::find_all_by_class(const std::string& class_name) const {
+  return search([&class_name](const DomNode& node){
+    for(const attribute& attr : node.m_element_node.attributes){
+      if(attr.name == "class" && attr.value == class_name){
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
+std::vector<const DomNode*> DomNode::find_by_id(const std::string& id) const {
+  return search([&id](const DomNode& node){
+    for(const attribute& attr : node.m_element_node.attributes){
+      if(attr.name == "id" && attr.value == id){
+        return true;
+      }
+    }
+    return false;
+  });
+}
+
 std::vector<const DomNode*> DomNode::find_all_by_tag(const std::string& tag_name) const{
   return search([&tag_name](const DomNode& node){
     return node.m_element_node.tag_name == tag_name;
@@ -74,6 +96,20 @@ std::string DomNode::contents() const {
   }
 
   return get_tag_str(true) + s + get_tag_str(false);
+}
+
+std::string DomNode::operator[](const std::string& attr_name) const {
+  if(m_node_type != DomNodeType::ELEMENT_NODE){
+    throw std::runtime_error("Cannot get attribute from non-element node.");
+  }
+
+  for(const attribute& attr : m_element_node.attributes){
+    if(attr.name == attr_name){
+      return attr.value;
+    }
+  }
+
+  throw std::runtime_error("Attribute " + attr_name + " not found.");
 }
 
 // DomNode private

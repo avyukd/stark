@@ -15,7 +15,9 @@ int main(int argc, char** argv) {
 
     std::string html_doc = get_html_doc_from_fs(file);
 
-    Stark stark{html_doc, true};
+    Stark stark{html_doc, StarkOptions{
+      .multi_threaded = true
+    }};
     const DomNode* root = stark.get_root();
 
     // find all "a" tag

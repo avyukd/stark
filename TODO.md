@@ -1,5 +1,6 @@
 ## TODO
 - test + stark (?) cleanup (make more modular)
+- caching
 - add more query interface functions
 	- find by class or id
   - text function?
@@ -7,3 +8,5 @@
   - get\_text for entire html
 - python bindings?
 - more rigorous testing
+- make packagable with cmake
+- headers for windows vs mac?

@@ -6,20 +6,49 @@
 #include <queue>
 #include <ostream>
 
-BasicDomParser::BasicDomParser() : 
+BasicDomParser::BasicDomParser(
+  std::vector<std::string> cache_by_tag,
+  std::vector<std::string> cache_by_class,
+  std::vector<std::string> cache_by_id
+) : 
   m_root{std::make_unique<DomNode>()},
   m_current_node{m_root.get()},
   m_data_str{""},
-  m_seen_html_tag{false}
-{}
+  m_seen_html_tag{false},
+  m_tag_cache{},
+  m_class_cache{},
+  m_id_cache{}
+{
+  if(!cache_by_tag.empty()) init_cache(m_tag_cache, cache_by_tag);
+  if(!cache_by_class.empty()) init_cache(m_class_cache, cache_by_class);
+  if(!cache_by_id.empty()) init_cache(m_id_cache, cache_by_id);
+}
+
+void BasicDomParser::init_cache(std::unique_ptr<cache_t>& cache, const std::vector<std::string>& keys){
+  cache = std::make_unique<cache_t>();
+  for(const auto& key : keys){
+    cache->insert({key, {}});
+  }
+}
 
 void BasicDomParser::push_data_str_to_current_node(){
   if(!std::all_of(m_data_str.begin(), m_data_str.end(), isspace)){
     trim(m_data_str);
     m_current_node->m_children.emplace_back(
-      new DomNode(m_data_str, m_current_node)
+      new DomNode(m_data_str, m_current_node) // text nodes don't need to be added to cache
     );
     m_data_str = "";
+  }
+}
+
+void BasicDomParser::check_and_add_to_cache(DomNode* node){
+  for(auto cache : {m_tag_cache.get(), m_class_cache.get(), m_id_cache.get()}){
+    if(cache){
+      auto it = cache->find(node->m_element_node.tag_name);
+      if(it != cache->end()){
+        it->second.push_back(node);
+      }
+    }
   }
 }
 
@@ -47,6 +76,7 @@ void BasicDomParser::consume_token(const Token& token){
 
         auto tag_node_uq = std::make_unique<DomNode>(token, m_current_node);
         auto tag_node_ptr = tag_node_uq.get();
+        check_and_add_to_cache(tag_node_ptr);
 
         if(is_void_tag(tag_node_ptr->m_element_node.tag_name))
           tag_node_ptr->m_element_node.self_closing = true;
