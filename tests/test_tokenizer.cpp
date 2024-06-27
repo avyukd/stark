@@ -23,9 +23,8 @@ int main (int argc, char** argv){
     Tokenizer tokenizer{contents, TokenizerOptions{
       .use_simd = true
     }};
-    tokenizer.run();
+    auto tokens = tokenizer.run();
 
-    std::vector<Token> tokens = tokenizer.get_tokens();
     for(const Token& token : tokens){
       std::cout << to_string(token) << std::endl;
     }

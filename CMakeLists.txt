@@ -25,3 +25,6 @@ target_include_directories(test_parser PUBLIC ${STARK_CODE_DIR})
 
 add_executable(test_dom_node_integration ${STARK_TESTS_DIR}/test_dom_node_integration.cpp ${STARK_HEADERS} ${STARK_SRC})
 target_include_directories(test_dom_node_integration PUBLIC ${STARK_CODE_DIR})
+
+add_executable(test_stark ${STARK_TESTS_DIR}/test_stark.cpp ${STARK_HEADERS} ${STARK_SRC})
+target_include_directories(test_stark PUBLIC ${STARK_CODE_DIR})

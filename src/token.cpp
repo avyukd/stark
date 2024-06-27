@@ -39,6 +39,12 @@ Token construct_empty_doctype_token(){
   return token;
 }
 
+Token construct_eof_token(){
+  Token token;
+  token.token_type = Token::TokenType::END_OF_FILE;
+  return token;
+}
+
 Token construct_doctype_token(char c) {
   Token token = construct_empty_doctype_token();
   token.m_doctype.name = "" + c;
@@ -57,6 +63,10 @@ Token construct_end_tag_token(const std::string& tag_name){
   token.token_type = Token::TokenType::END_TAG;
   token.m_start_or_end_tag.tag_name = tag_name;
   return token;
+}
+
+bool is_eof_token(const Token& token){
+  return token.token_type == Token::TokenType::END_OF_FILE;
 }
 
 void set_force_quirks(Token& token){

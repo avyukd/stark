@@ -12,8 +12,8 @@ struct TokenizerOptions {
 class Tokenizer {
   public:
   Tokenizer(const std::string&, TokenizerOptions = TokenizerOptions{});
-  void run();
-  std::vector<Token> get_tokens();
+  std::vector<Token> run();
+  std::vector<Token> produce();
 
   private:
   using TokenizerState = TokenizerNamespace::TokenizerState; 
@@ -28,9 +28,10 @@ class Tokenizer {
 
   std::string m_contents;
   size_t m_cursor;
-  std::vector<Token> m_tokens;
+  Token m_last_start_tag_token;
   std::string m_tmp_buffer;
   Token m_tmp_token;
+  int m_character_reference_code;
 
   TokenizerState m_state;
   TokenizerState m_return_state;

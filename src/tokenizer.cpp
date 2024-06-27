@@ -11,17 +11,22 @@ TODO:
 
 #define REPLACEMENT_STR "\xEF\xBF\xBD"
 
-#define EMIT_CHAR_TOKENS(str) for(auto& token : construct_character_tokens(str)){ m_tokens.push_back(std::move(token)); }
+#define EMIT_CHAR_TOKENS(str) for(auto& token : construct_character_tokens(str)){ tokens.push_back(std::move(token)); }
 #define CHAR_TOKEN(x) construct_character_token(x)
-#define EMIT_CHAR_TOKEN(x) m_tokens.push_back(CHAR_TOKEN(x))
+#define EMIT_CHAR_TOKEN(x) tokens.push_back(CHAR_TOKEN(x))
 #define COMMENT_TOKEN(x) construct_comment_token(x)
 #define EMPTY_DOCTYPE_TOKEN construct_empty_doctype_token()
+#define END_OF_FILE_TOKEN construct_eof_token()
 #define DOCTYPE_TOKEN(x) construct_doctype_token(x)
 #define START_TAG_TOKEN(x) construct_start_tag_token(x)
 #define END_TAG_TOKEN(x) construct_end_tag_token(x)
 #define REPLACEMENT_CHAR_TOKEN construct_character_token(REPLACEMENT_STR)
+#define EMIT_REPLACEMENT_CHAR_TOKEN tokens.push_back(REPLACEMENT_CHAR_TOKEN)
 #define ON(ch) (cp == ch)
-#define EMIT_CURRENT_TOKEN m_tokens.push_back(std::move(m_tmp_token)); reset_token(m_tmp_token)
+// TODO: too many if checks? 
+#define EMIT_CURRENT_TOKEN tokens.push_back(std::move(m_tmp_token)); \ 
+                           if(m_tmp_token.token_type == Token::TokenType::START_TAG) m_last_start_tag_token = m_tmp_token; \
+                           reset_token(m_tmp_token)
 #define FLUSH_CODE_POINTS if(is_attribute_return_state()){ \
                             append_to_tag_token_attribute_value(m_tmp_token, m_tmp_buffer); \
                           }else{ \
@@ -34,17 +39,32 @@ Tokenizer::Tokenizer(const std::string& contents, TokenizerOptions options) :
   m_return_state{m_state},
   m_tmp_buffer{},
   m_named_char_ref{},
-  m_options{options}
+  m_options{options},
+  m_character_reference_code{0}
 {
-  m_tokens.reserve(contents.size());
+  // m_tokens.reserve(contents.size());
   reset_token(m_tmp_token);
 }
 
-void Tokenizer::run() {
+std::vector<Token> Tokenizer::run() {
+  std::vector<Token> all_tokens; all_tokens.reserve(m_contents.size());
   while(true){
-    if(m_cursor >= m_contents.size()) break;
+    auto tokens = produce();
+    for(const Token& token : tokens){
+      if(is_eof_token(token)){
+        return all_tokens;
+      }
+      all_tokens.push_back(token);
+    }
+  }
+}
 
-    // todo check bounds here?
+std::vector<Token> Tokenizer::produce(){
+    if(m_cursor >= m_contents.size()) return {END_OF_FILE_TOKEN};
+
+    std::vector<Token> tokens;
+
+    //TODO: check bounds here?
     if(m_options.use_simd){
       if(std::string needles = in_simd_emit_char_state(); needles != ""){
         auto state_change_pos_opt = simd_state_change(needles);
@@ -56,7 +76,7 @@ void Tokenizer::run() {
           EMIT_CHAR_TOKEN(m_contents[m_cursor++]);
         }
         if(!state_change_pos_opt.has_value()){
-          continue;
+          return tokens;
         }
         // else: pass and continue into state change
       } 
@@ -81,7 +101,7 @@ void Tokenizer::run() {
         }else if(ON('<')){
           m_state = TokenizerState::RcDataLessThanSignState;
         }else if(cp == '\0'){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
@@ -90,7 +110,7 @@ void Tokenizer::run() {
         if(ON('<')){
           m_state = TokenizerState::RawTextLessThanSignState;
         }else if(cp == '\0'){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
@@ -99,14 +119,14 @@ void Tokenizer::run() {
         if(ON('<')){
           m_state = TokenizerState::ScriptDataLessThanSignState;
         }else if(cp == '\0'){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
         break;
       case TokenizerState::PlainTextState:
         if(cp == '\0'){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
@@ -310,7 +330,7 @@ void Tokenizer::run() {
         }else if(ON('<')){
           m_state = TokenizerState::ScriptDataEscapedLessThanSignState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
@@ -322,7 +342,7 @@ void Tokenizer::run() {
         }else if(ON('<')){
           m_state = TokenizerState::ScriptDataEscapedLessThanSignState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
           m_state = TokenizerState::ScriptDataEscapedState;
         }else{
           EMIT_CHAR_TOKEN(cp);
@@ -338,7 +358,7 @@ void Tokenizer::run() {
           EMIT_CHAR_TOKEN('>');
           m_state = TokenizerState::ScriptDataState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
           m_state = TokenizerState::ScriptDataEscapedState;
         }else{
           EMIT_CHAR_TOKEN(cp);
@@ -415,7 +435,7 @@ void Tokenizer::run() {
           EMIT_CHAR_TOKEN('<');
           m_state = TokenizerState::ScriptDataDoubleEscapedLessThanSignState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
         }else{
           EMIT_CHAR_TOKEN(cp);
         }
@@ -428,7 +448,7 @@ void Tokenizer::run() {
           EMIT_CHAR_TOKEN('<');
           m_state = TokenizerState::ScriptDataDoubleEscapedLessThanSignState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
           m_state = TokenizerState::ScriptDataDoubleEscapedState;
         }else{
           EMIT_CHAR_TOKEN(cp);
@@ -445,7 +465,7 @@ void Tokenizer::run() {
           EMIT_CHAR_TOKEN('>');
           m_state = TokenizerState::ScriptDataState;
         }else if(ON('\0')){
-          m_tokens.push_back(REPLACEMENT_CHAR_TOKEN);
+          EMIT_REPLACEMENT_CHAR_TOKEN;
           m_state = TokenizerState::ScriptDataDoubleEscapedState;
         }else{
           EMIT_CHAR_TOKEN(cp);
@@ -1032,18 +1052,81 @@ void Tokenizer::run() {
         break;
       // TODO: need to implement
       case TokenizerState::NumericCharacterReferenceState:
+        m_character_reference_code = 0;
+        if(ON('x') || ON('X')){
+          m_tmp_buffer.push_back(cp);
+          m_state = TokenizerState::HexadecimalCharacterReferenceStartState;
+        }else{
+          m_state = TokenizerState::DecimalCharacterReferenceStartState;
+          m_cursor--;
+        }
+        break;
       case TokenizerState::HexadecimalCharacterReferenceStartState:
+        if(is_hex(cp)){
+          m_state = TokenizerState::HexadecimalCharacterReferenceState;
+          m_cursor--;
+        }else{
+          FLUSH_CODE_POINTS;
+          m_state = m_return_state;
+          m_cursor--;
+        }
+        break;
       case TokenizerState::DecimalCharacterReferenceStartState:
+        if(isdigit(cp)){
+          m_state = TokenizerState::DecimalCharacterReferenceState;
+          m_cursor--;
+        }else{
+          FLUSH_CODE_POINTS;
+          m_state = m_return_state;
+          m_cursor--;
+        }
+        break;
       case TokenizerState::HexadecimalCharacterReferenceState:
+        if(isdigit(cp)){
+          m_character_reference_code = m_character_reference_code * 16 + (cp - '0');
+        }else if(is_upper_hex(cp)){
+          m_character_reference_code = m_character_reference_code * 16 + (cp - 'A' + 10);
+        }else if(is_lower_hex(cp)){
+          m_character_reference_code = m_character_reference_code * 16 + (cp - 'a' + 10);
+        }else if(ON(';')){
+          m_state = TokenizerState::NumericCharacterReferenceEndState;
+        }else{
+          m_state = TokenizerState::NumericCharacterReferenceEndState;
+          m_cursor--;
+        }
+        break;
       case TokenizerState::DecimalCharacterReferenceState:
+        if(isdigit(cp)){
+          m_character_reference_code = m_character_reference_code * 10 + (cp - '0');
+        }else if(ON(';')){
+          m_state = TokenizerState::NumericCharacterReferenceEndState;
+        }else{
+          m_state = TokenizerState::NumericCharacterReferenceEndState;
+          m_cursor--;
+        }
+        break;
       case TokenizerState::NumericCharacterReferenceEndState:
-        ASSERT_NOT_REACHED;
+        if(
+          m_character_reference_code == 0x00 ||
+          m_character_reference_code > 0x10FFFF ||
+          (m_character_reference_code >= 0xD800 && m_character_reference_code <= 0xDFFF) // surrogate          
+        ){
+          m_character_reference_code = 0xFFFD; // TODO: check if this is replacement char
+        }else{
+          int code_point = get_code_point_from_character_reference(m_character_reference_code);
+          if(code_point)
+            m_character_reference_code = code_point;
+        }
+        m_tmp_buffer = "";
+        m_tmp_buffer += wstring_to_utf8(codepoint_to_wstring(m_character_reference_code));
+        FLUSH_CODE_POINTS;
+        m_state = m_return_state;
+        break;
       default:
         ASSERT_NOT_REACHED;
     }
     m_cursor++;
-
-  }
+    return tokens;
 }
 
 std::optional<size_t> Tokenizer::simd_state_change(const std::string& needles){
@@ -1089,15 +1172,6 @@ bool Tokenizer::is_attribute_return_state(){
 }
 
 bool Tokenizer::is_appropriate_end_tag_token() {
-  assert(m_tmp_token.token_type == Token::TokenType::END_TAG);
-  for(int i = m_tokens.size() - 1; i >= 0; i--){
-    if(m_tokens[i].token_type == Token::TokenType::START_TAG){
-      return m_tmp_token.m_start_or_end_tag.tag_name == m_tokens[i].m_start_or_end_tag.tag_name;
-    }
-  }
-  return false;
-}
-
-std::vector<Token> Tokenizer::get_tokens(){
-  return m_tokens;
+  // assert(m_tmp_token.token_type == Token::TokenType::END_TAG);
+  return m_last_start_tag_token.m_start_or_end_tag.tag_name == m_tmp_token.m_start_or_end_tag.tag_name;
 }
