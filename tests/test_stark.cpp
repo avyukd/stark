@@ -1,8 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <sstream>
-
+#include "test_utils.h"
 #include "stark.h"
 
 /*
@@ -10,19 +6,14 @@ input: HTML file
 - tests multithreaded tokenizer + parser
 */
 
-const std::string input_root_prefix = "../tests/input/";
-const std::string html_suffix = ".html";
-
 int main(int argc, char** argv) {
   for(size_t i = 1; i < argc; i++){
-    std::cout << "Test " << i << " of " << (argc - 1) << ": " << argv[i] << std::endl;
+    PRINT_TEST_NUM;
 
-    std::string file_name = argv[i]; file_name += html_suffix;
-    std::ifstream file(input_root_prefix + file_name);
+    std::string file_name = get_filename_from_arg(argv[i], HTML_SUFFIX);
+    std::ifstream file(file_name);
 
-    std::stringstream ss;
-    ss << file.rdbuf();
-    std::string html_doc = ss.str();
+    std::string html_doc = get_html_doc_from_fs(file);
 
     Stark stark{html_doc, true};
     const DomNode* root = stark.get_root();

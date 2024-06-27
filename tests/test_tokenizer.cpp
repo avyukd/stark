@@ -1,24 +1,16 @@
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <sstream>
-
+#include "test_utils.h"
 #include "tokenizer.h"
 
-const std::string html_root_prefix = "../tests/input/";
-const std::string html_suffix = ".html";
 
 int main (int argc, char** argv){
 
   for(size_t i = 1; i < argc; i++){
-    std::cout << "Test " << i << " of " << (argc - 1) << ": " << argv[i] << std::endl; 
+    PRINT_TEST_NUM;
 
-    std::string file_name = argv[i]; file_name += html_suffix;
-    std::ifstream file(html_root_prefix + file_name);
+    std::string file_name = get_filename_from_arg(argv[i], HTML_SUFFIX);
+    std::ifstream file(file_name);
 
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    std::string contents = buffer.str();
+    std::string contents = get_html_doc_from_fs(file);
 
     Tokenizer tokenizer{contents, TokenizerOptions{
       .use_simd = true

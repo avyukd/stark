@@ -1,8 +1,4 @@
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <sstream>
-
+#include "test_utils.h"
 #include "basic_dom_parser.h"
 
 /*
@@ -11,10 +7,6 @@ TODO:
 - think its probably not self closing (tokenizer is fine), and parser should handle by knowing link and meta don't require a close tag in html 5...
 - link and meta don't have content so that is one workaround
 */
-
-const std::string input_root_prefix = "../tests/input/";
-const std::string tokens_suffix = ".tokens";
-
 void strip_comma(std::string& s){
   s.pop_back();
 }
@@ -81,10 +73,9 @@ std::vector<Token> get_tokens_from_test_input(std::ifstream& fs){
 int main (int argc, char** argv){
 
   for(size_t i = 1; i < argc; i++){
-    std::cout << "Test " << i << " of " << (argc - 1) << ": " << argv[i] << std::endl; 
-
-    std::string file_name = argv[i]; file_name += tokens_suffix;
-    std::ifstream file(input_root_prefix + file_name);
+    PRINT_TEST_NUM;
+    std::string fn = get_filename_from_arg(argv[i], TOKENS_SUFFIX);
+    std::ifstream file(fn);
 
     std::vector<Token> tokens = get_tokens_from_test_input(file);
     std::cout << "Num tokens: " << tokens.size() << std::endl;
